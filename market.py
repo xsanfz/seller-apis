@@ -270,6 +270,48 @@ def create_prices(watch_remnants, offer_ids):
 
 
 async def upload_prices(watch_remnants, campaign_id, market_token):
+    """Асинхронно обновляет цены товаров в Яндекс.Маркете.
+
+       Получает актуальные цены из данных поставщика и загружает их в указанную кампанию.
+       Автоматически разбивает список товаров на пакеты по 500 позиций для корректной обработки.
+
+       Args:
+           watch_remnants (list): Список товаров от поставщика в формате:
+               [{
+                   "Код": "12345",           # Артикул товара
+                   "Цена": "5'990.00 руб."   # Цена в формате поставщика
+               }, ...]
+           campaign_id (str): ID вашей кампании в Маркете (например "123456")
+           market_token (str): API-токен для доступа к Яндекс.Маркету (например "market_token_abc123")
+
+       Returns:
+           list: Список всех успешно загруженных цен в формате:
+               [{
+                   "id": "12345",
+                   "price": {
+                       "value": 5990,
+                       "currencyId": "RUR"
+                   }
+               }, ...]
+
+       Example:
+           >>> await upload_prices(
+           ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
+           ...     "123456",
+           ...     "market_token_abc123"
+           ... )
+           [{
+               "id": "12345",
+               "price": {
+                   "value": 5990,
+                   "currencyId": "RUR"
+               }
+           }]
+
+       Error Example:
+           >>> await upload_prices([], "wrong_id", "invalid_token")
+           requests.exceptions.HTTPError: 401 Unauthorized
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_prices in list(divide(prices, 500)):
@@ -278,6 +320,42 @@ async def upload_prices(watch_remnants, campaign_id, market_token):
 
 
 async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id):
+    """Асинхронно обновляет остатки товаров для указанного склада в Яндекс.Маркете.
+
+        Получает текущие остатки товаров из данных поставщика и синхронизирует их с указанным складом
+        в личном кабинете Яндекс.Маркета. Автоматически разбивает большой список на части по 2000 товаров.
+
+        Args:
+            watch_remnants (list): Список товаров от поставщика в формате:
+                [{
+                    "Код": "12345",          # Артикул товара
+                    "Количество": ">10"      # Количество (">10", "1" или число)
+                }, ...]
+            campaign_id (str): ID кампании в Яндекс.Маркете (например "CAMPAIGN123")
+            market_token (str): API-токен доступа (например "TOKEN456")
+            warehouse_id (str): ID склада в Маркете (например "WAREHOUSE789")
+
+        Returns:
+            tuple: Кортеж из двух элементов:
+                - not_empty (list): Товары с ненулевым остатком
+                - all_stocks (list): Все обновленные товары (включая нулевые остатки)
+
+        Example:
+            >>> await upload_stocks(
+            ...     [{"Код": "12345", "Количество": "5"}],
+            ...     "CAMPAIGN123",
+            ...     "TOKEN456",
+            ...     "WAREHOUSE789"
+            ... )
+            (
+                [{"sku": "12345", "warehouseId": "WAREHOUSE789", "items": [{"count": 5}]}],  # Товары в наличии
+                [{"sku": "12345", "warehouseId": "WAREHOUSE789", "items": [{"count": 5}]}]   # Все товары
+            )
+
+        Error Example:
+            >>> await upload_stocks([], "wrong_id", "bad_token", "invalid_warehouse")
+            requests.exceptions.HTTPError: 403 Forbidden
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
     for some_stock in list(divide(stocks, 2000)):
@@ -289,6 +367,30 @@ async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id)
 
 
 def main():
+    """Основная функция для управления процессом синхронизации данных с маркетплейсами.
+
+        Читает настройки из переменных окружения и выполняет полный цикл синхронизации:
+        1. Загружает данные о товарах с сайта поставщика
+        2. Обновляет остатки и цены для FBS и DBS в Яндекс.Маркете
+        3. Обрабатывает возможные ошибки соединения
+
+        Настройки окружения:
+            MARKET_TOKEN: Токен API Яндекс.Маркета
+            FBS_ID: ID FBS-кампании
+            DBS_ID: ID DBS-кампании
+            WAREHOUSE_FBS_ID: ID склада FBS
+            WAREHOUSE_DBS_ID: ID склада DBS
+
+        Example:
+            >>> main()
+            Начата синхронизация с Яндекс.Маркет...
+            Данные успешно обновлены для FBS (обновлено 15 товаров)
+            Данные успешно обновлены для DBS (обновлено 12 товаров)
+
+        Error Example:
+            >>> main()
+            Ошибка соединения: Превышено время ожидания...
+    """
     env = Env()
     market_token = env.str("MARKET_TOKEN")
     campaign_fbs_id = env.str("FBS_ID")
