@@ -13,17 +13,20 @@ logger = logging.getLogger(__file__)
 def get_product_list(page, campaign_id, access_token):
     """Получает одну страницу товаров магазина с Яндекс.Маркета.
 
-        Args:
-            page: Токен для пагинации (пустая строка для первой страницы)
-            campaign_id: Номер магазина в Маркете
-            access_token: Ключ доступа к API
+    Args:
+        page: Токен для пагинации (пустая строка для первой страницы)
+        campaign_id: Номер магазина в Маркете
+        access_token: Ключ доступа к API
 
-        Returns:
-            Словарь с товарами и данными пагинации
+    Returns:
+        dict: Словарь с товарами и данными пагинации
 
-        Example:
-            >>> get_product_list("", "123", "abc123")
-            {'offerMappingEntries': [...], 'paging': {...}}
+    Examples:
+        >>> get_product_list("", "123", "abc123")
+        {'offerMappingEntries': [...], 'paging': {...}}
+
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
@@ -46,17 +49,20 @@ def get_product_list(page, campaign_id, access_token):
 def update_stocks(stocks, campaign_id, access_token):
     """Обновляет количество товаров на складе Маркета.
 
-        Args:
-            stocks: Список товаров с новыми остатками
-            campaign_id: Номер магазина
-            access_token: Ключ API
+    Args:
+        stocks: Список товаров с новыми остатками
+        campaign_id: Номер магазина
+        access_token: Ключ API
 
-        Returns:
-            Ответ от Маркета об успешном обновлении
+    Returns:
+        dict: Ответ от Маркета об успешном обновлении
 
-        Example:
-            >>> update_stocks([{"sku": "123", "count": 10}], "123", "abc123")
-            {'status': 'OK'}
+    Examples:
+        >>> update_stocks([{"sku": "123", "count": 10}], "123", "abc123")
+        {'status': 'OK'}
+
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
@@ -76,17 +82,20 @@ def update_stocks(stocks, campaign_id, access_token):
 def update_price(prices, campaign_id, access_token):
     """Меняет цены товаров в Маркете.
 
-        Args:
-            prices: Список товаров с новыми ценами
-            campaign_id: Номер магазина
-            access_token: Ключ API
+    Args:
+        prices: Список товаров с новыми ценами
+        campaign_id: Номер магазина
+        access_token: Ключ API
 
-        Returns:
-            Ответ об обновлении цен
+    Returns:
+        dict: Ответ об обновлении цен
 
-        Example:
-            >>> update_price([{"id": "123", "price": 5990}], "123", "abc123")
-            {'status': 'OK'}
+    Examples:
+        >>> update_price([{"id": "123", "price": 5990}], "123", "abc123")
+        {'status': 'OK'}
+
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
@@ -109,19 +118,18 @@ def get_offer_ids(campaign_id, market_token):
     Собирает полный список артикулов товаров магазина, обходя все страницы.
 
     Args:
-        campaign_id (str): Номер вашей кампании в Маркете (например, "12345")
-        market_token (str): Токен доступа к API (например, "AbCdEf123")
+        campaign_id: Номер вашей кампании в Маркете
+        market_token: Токен доступа к API
 
     Returns:
-        list: Список всех артикулов товаров (например, ["1001", "1002", "1003"])
+        list: Список всех артикулов товаров
 
-    Example:
+    Examples:
         >>> get_offer_ids("12345", "AbCdEf123")
         ["1001", "1002", "1003"]
 
-    Error Example:
-        >>> get_offer_ids("wrong_id", "bad_token")
-        requests.exceptions.HTTPError: 403 Forbidden
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     page = ""
     product_list = []
@@ -140,38 +148,27 @@ def get_offer_ids(campaign_id, market_token):
 def create_stocks(watch_remnants, offer_ids, warehouse_id):
     """Формирует список остатков товаров для загрузки в Яндекс.Маркет.
 
-        На основе данных поставщика создает список товаров с обновленными остатками.
-        Для товаров, которых нет в данных поставщика, устанавливает остаток 0.
+    На основе данных поставщика создает список товаров с обновленными остатками.
+    Для товаров, которых нет в данных поставщика, устанавливает остаток 0.
 
-        Args:
-            watch_remnants (list): Список товаров от поставщика в формате:
-                [{"Код": "123", "Количество": "5"}, ...]
-            offer_ids (list): Список артикулов товаров в Маркете
-                (например, ["123", "456"])
-            warehouse_id (str): ID склада в Маркете (например, "WH-123")
+    Args:
+        watch_remnants: Список товаров от поставщика
+        offer_ids: Список артикулов товаров в Маркете
+        warehouse_id: ID склада в Маркете
 
-        Returns:
-            list: Готовый список для обновления остатков в формате:
-                [{
-                    "sku": "123",
-                    "warehouseId": "WH-123",
-                    "items": [{"count": 5, ...}]
-                }, ...]
+    Returns:
+        list: Готовый список для обновления остатков
 
-        Example:
-            >>> create_stocks(
-            ...     [{"Код": "123", "Количество": "5"}],
-            ...     ["123", "456"],
-            ...     "WH-123"
-            ... )
-            [
-                {"sku": "123", "warehouseId": "WH-123", "items": [{"count": 5, ...}]},
-                {"sku": "456", "warehouseId": "WH-123", "items": [{"count": 0, ...}]}
-            ]
-
-        Error Example:
-            >>> create_stocks([], ["123"], "WH-123")
-            [{"sku": "123", "warehouseId": "WH-123", "items": [{"count": 0, ...}]}]
+    Examples:
+        >>> create_stocks(
+        ...     [{"Код": "123", "Количество": "5"}],
+        ...     ["123", "456"],
+        ...     "WH-123"
+        ... )
+        [
+            {"sku": "123", "warehouseId": "WH-123", "items": [{"count": 5}]},
+            {"sku": "456", "warehouseId": "WH-123", "items": [{"count": 0}]}
+        ]
     """
     # Уберем то, что не загружено в market
     stocks = list()
@@ -220,35 +217,25 @@ def create_stocks(watch_remnants, offer_ids, warehouse_id):
 def create_prices(watch_remnants, offer_ids):
     """Формирует список цен товаров для загрузки в Яндекс.Маркет.
 
-        На основе данных поставщика создает список товаров с обновленными ценами.
-        Включает только товары, которые есть как у поставщика, так и в Маркете.
+    На основе данных поставщика создает список товаров с обновленными ценами.
+    Включает только товары, которые есть как у поставщика, так и в Маркете.
 
-        Args:
-            watch_remnants (list): Список товаров от поставщика в формате:
-                [{"Код": "123", "Цена": "5'990.00 руб."}, ...]
-            offer_ids (list): Список артикулов товаров в Маркете
-                (например, ["123", "456"])
+    Args:
+        watch_remnants: Список товаров от поставщика
+        offer_ids: Список артикулов товаров в Маркете
 
-        Returns:
-            list: Список цен для обновления в формате:
-                [{
-                    "id": "123",
-                    "price": {"value": 5990, "currencyId": "RUR"}
-                }, ...]
+    Returns:
+        list: Список цен для обновления
 
-        Example:
-            >>> create_prices(
-            ...     [{"Код": "123", "Цена": "5'990.00 руб."}],
-            ...     ["123", "456"]
-            ... )
-            [{
-                "id": "123",
-                "price": {"value": 5990, "currencyId": "RUR"}
-            }]
-
-        Error Example:
-            >>> create_prices([{"Код": "999", "Цена": "1'000.00 руб."}], ["123"])
-            []
+    Examples:
+        >>> create_prices(
+        ...     [{"Код": "123", "Цена": "5'990.00 руб."}],
+        ...     ["123", "456"]
+        ... )
+        [{
+            "id": "123",
+            "price": {"value": 5990, "currencyId": "RUR"}
+        }]
     """
     prices = []
     for watch in watch_remnants:
@@ -272,45 +259,33 @@ def create_prices(watch_remnants, offer_ids):
 async def upload_prices(watch_remnants, campaign_id, market_token):
     """Асинхронно обновляет цены товаров в Яндекс.Маркете.
 
-       Получает актуальные цены из данных поставщика и загружает их в указанную кампанию.
-       Автоматически разбивает список товаров на пакеты по 500 позиций для корректной обработки.
+    Получает актуальные цены из данных поставщика и загружает их в указанную кампанию.
+    Автоматически разбивает список товаров на пакеты по 500 позиций.
 
-       Args:
-           watch_remnants (list): Список товаров от поставщика в формате:
-               [{
-                   "Код": "12345",           # Артикул товара
-                   "Цена": "5'990.00 руб."   # Цена в формате поставщика
-               }, ...]
-           campaign_id (str): ID вашей кампании в Маркете (например "123456")
-           market_token (str): API-токен для доступа к Яндекс.Маркету (например "market_token_abc123")
+    Args:
+        watch_remnants: Список товаров от поставщика
+        campaign_id: ID кампании в Маркете
+        market_token: API-токен для доступа к Яндекс.Маркету
 
-       Returns:
-           list: Список всех успешно загруженных цен в формате:
-               [{
-                   "id": "12345",
-                   "price": {
-                       "value": 5990,
-                       "currencyId": "RUR"
-                   }
-               }, ...]
+    Returns:
+        list: Список всех успешно загруженных цен
 
-       Example:
-           >>> await upload_prices(
-           ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
-           ...     "123456",
-           ...     "market_token_abc123"
-           ... )
-           [{
-               "id": "12345",
-               "price": {
-                   "value": 5990,
-                   "currencyId": "RUR"
-               }
-           }]
+    Examples:
+        >>> await upload_prices(
+        ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
+        ...     "123456",
+        ...     "market_token_abc123"
+        ... )
+        [{
+            "id": "12345",
+            "price": {
+                "value": 5990,
+                "currencyId": "RUR"
+            }
+        }]
 
-       Error Example:
-           >>> await upload_prices([], "wrong_id", "invalid_token")
-           requests.exceptions.HTTPError: 401 Unauthorized
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     offer_ids = get_offer_ids(campaign_id, market_token)
     prices = create_prices(watch_remnants, offer_ids)
@@ -322,39 +297,34 @@ async def upload_prices(watch_remnants, campaign_id, market_token):
 async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id):
     """Асинхронно обновляет остатки товаров для указанного склада в Яндекс.Маркете.
 
-        Получает текущие остатки товаров из данных поставщика и синхронизирует их с указанным складом
-        в личном кабинете Яндекс.Маркета. Автоматически разбивает большой список на части по 2000 товаров.
+    Получает текущие остатки товаров из данных поставщика и синхронизирует их с указанным складом.
+    Автоматически разбивает большой список на части по 2000 товаров.
 
-        Args:
-            watch_remnants (list): Список товаров от поставщика в формате:
-                [{
-                    "Код": "12345",          # Артикул товара
-                    "Количество": ">10"      # Количество (">10", "1" или число)
-                }, ...]
-            campaign_id (str): ID кампании в Яндекс.Маркете (например "CAMPAIGN123")
-            market_token (str): API-токен доступа (например "TOKEN456")
-            warehouse_id (str): ID склада в Маркете (например "WAREHOUSE789")
+    Args:
+        watch_remnants: Список товаров от поставщика
+        campaign_id: ID кампании в Яндекс.Маркете
+        market_token: API-токен доступа
+        warehouse_id: ID склада в Маркете
 
-        Returns:
-            tuple: Кортеж из двух элементов:
-                - not_empty (list): Товары с ненулевым остатком
-                - all_stocks (list): Все обновленные товары (включая нулевые остатки)
+    Returns:
+        tuple: Кортеж из двух элементов:
+            - list: Товары с ненулевым остатком
+            - list: Все обновленные товары
 
-        Example:
-            >>> await upload_stocks(
-            ...     [{"Код": "12345", "Количество": "5"}],
-            ...     "CAMPAIGN123",
-            ...     "TOKEN456",
-            ...     "WAREHOUSE789"
-            ... )
-            (
-                [{"sku": "12345", "warehouseId": "WAREHOUSE789", "items": [{"count": 5}]}],  # Товары в наличии
-                [{"sku": "12345", "warehouseId": "WAREHOUSE789", "items": [{"count": 5}]}]   # Все товары
-            )
+    Examples:
+        >>> await upload_stocks(
+        ...     [{"Код": "12345", "Количество": "5"}],
+        ...     "CAMPAIGN123",
+        ...     "TOKEN456",
+        ...     "WAREHOUSE789"
+        ... )
+        (
+            [{"sku": "12345", "warehouseId": "WAREHOUSE789", "items": [{"count": 5}]}],
+            [{"sku": "12345", "warehouseId": "WAREHOUSE789", "items": [{"count": 5}]}]
+        )
 
-        Error Example:
-            >>> await upload_stocks([], "wrong_id", "bad_token", "invalid_warehouse")
-            requests.exceptions.HTTPError: 403 Forbidden
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     offer_ids = get_offer_ids(campaign_id, market_token)
     stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
@@ -369,34 +339,28 @@ async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id)
 def main():
     """Основная функция для управления процессом синхронизации данных с Яндекс.Маркета.
 
-        Выполняет полный цикл обновления данных:
+    Выполняет полный цикл обновления данных:
     1. Загружает актуальные остатки с сайта поставщика
     2. Синхронизирует данные с Яндекс.Маркет (FBS и DBS)
     3. Обрабатывает возможные ошибки соединения
 
-    Args:
-        Нет прямых аргументов. Использует переменные окружения:
+    Использует переменные окружения:
         - MARKET_TOKEN: Токен API Яндекс.Маркета
         - FBS_ID: ID FBS-кампании
         - DBS_ID: ID DBS-кампании
         - WAREHOUSE_FBS_ID: ID FBS-склада
         - WAREHOUSE_DBS_ID: ID DBS-склада
 
-    Returns:
-        None: Функция не возвращает значений, но:
-        - Выводит результаты в консоль
-        - Обновляет данные на маркетплейсах
-
-    Raises:
-        requests.exceptions.ReadTimeout: При превышении времени ожидания
-        requests.exceptions.ConnectionError: При проблемах с соединением
-        Exception: При других неожиданных ошибках
-
     Examples:
         >>> main()
         [INFO] Начата синхронизация с Яндекс.Маркет...
         [INFO] FBS: обновлено 15 товаров
         [INFO] DBS: обновлено 12 товаров
+
+    Raises:
+        requests.exceptions.ReadTimeout: При превышении времени ожидания
+        requests.exceptions.ConnectionError: При проблемах с соединением
+        Exception: При других неожиданных ошибках
     """
     env = Env()
     market_token = env.str("MARKET_TOKEN")
