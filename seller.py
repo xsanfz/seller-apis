@@ -15,16 +15,19 @@ def get_product_list(last_id, client_id, seller_token):
     """Получает список товаров магазина с Ozon.
 
     Args:
-        last_id (str): ID последнего товара (пустая строка для начала)
-        client_id (str): ID клиента в Ozon
-        seller_token (str): Токен продавца
+        last_id: ID последнего товара (пустая строка для начала)
+        client_id: ID клиента в Ozon
+        seller_token: Токен продавца
 
     Returns:
         dict: Список товаров и данные пагинации
 
-    Example:
+    Examples:
         >>> get_product_list("", "client123", "token456")
         {'items': [...], 'total': 100}
+
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     url = "https://api-seller.ozon.ru/v2/product/list"
     headers = {
@@ -52,11 +55,14 @@ def get_offer_ids(client_id, seller_token):
         seller_token: Токен продавца
 
     Returns:
-        Список всех артикулов товаров
+        list: Список всех артикулов товаров
 
-    Example:
+    Examples:
         >>> get_offer_ids("client123", "token456")
         ["12345", "67890"]
+
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     last_id = ""
     product_list = []
@@ -76,27 +82,20 @@ def get_offer_ids(client_id, seller_token):
 def update_price(prices: list, client_id, seller_token):
     """Обновляет цены товаров в личном кабинете Ozon.
 
-    Отправляет новые цены на Ozon для указанных товаров.
-    Максимально можно обновить цены для 1000 товаров за один запрос.
-
     Args:
-        prices (list): Список цен в формате:
+        prices: Список цен в формате:
             [{
                 "offer_id": "12345",
                 "price": "5990",
                 "currency_code": "RUB"
             }, ...]
-        client_id (str): ID вашего аккаунта в Ozon (например "12345")
-        seller_token (str): Ваш API-ключ Ozon (например "abc123")
+        client_id: ID вашего аккаунта в Ozon
+        seller_token: Ваш API-ключ Ozon
 
     Returns:
-        dict: Ответ от Ozon в формате:
-            {
-                "result": [...],
-                "status": "OK"
-            }
+        dict: Ответ от Ozon
 
-    Example:
+    Examples:
         >>> update_price(
         ...     [{"offer_id": "123", "price": "5990", "currency_code": "RUB"}],
         ...     "12345",
@@ -104,9 +103,8 @@ def update_price(prices: list, client_id, seller_token):
         ... )
         {"result": [...], "status": "OK"}
 
-    Error Example:
-        >>> update_price([], "wrong_id", "bad_token")
-        requests.exceptions.HTTPError: 401 Unauthorized
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     url = "https://api-seller.ozon.ru/v1/product/import/prices"
     headers = {
@@ -122,26 +120,19 @@ def update_price(prices: list, client_id, seller_token):
 def update_stocks(stocks: list, client_id, seller_token):
     """Обновляет остатки товаров на складе в личном кабинете Ozon.
 
-    Отправляет текущие остатки товаров на Ozon.
-    Остатки обновляются только для указанных товаров.
-
     Args:
-        stocks (list): Список остатков в формате:
+        stocks: Список остатков в формате:
             [{
-                "offer_id": "12345",  # Артикул товара
-                "stock": 10           # Доступное количество
+                "offer_id": "12345",
+                "stock": 10
             }, ...]
-        client_id (str): ID вашего магазина в Ozon (например "12345-AB")
-        seller_token (str): Ваш API-ключ от Ozon (например "token123xyz")
+        client_id: ID вашего магазина в Ozon
+        seller_token: Ваш API-ключ от Ozon
 
     Returns:
-        dict: Ответ от Ozon в формате:
-            {
-                "result": [...],
-                "status": "OK"
-            }
+        dict: Ответ от Ozon
 
-    Example:
+    Examples:
         >>> update_stocks(
         ...     [{"offer_id": "12345", "stock": 5}],
         ...     "12345-AB",
@@ -149,13 +140,8 @@ def update_stocks(stocks: list, client_id, seller_token):
         ... )
         {"result": [...], "status": "OK"}
 
-    Error Example:
-        >>> update_stocks(
-        ...     [{"offer_id": "12345", "stock": "пять"}],  # Неправильный формат
-        ...     "12345-AB",
-        ...     "token123xyz"
-        ... )
-        requests.exceptions.HTTPError: 400 Bad Request
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     url = "https://api-seller.ozon.ru/v1/product/import/stocks"
     headers = {
@@ -171,15 +157,15 @@ def update_stocks(stocks: list, client_id, seller_token):
 def download_stock():
     """Скачивает и обрабатывает файл с остатками с сайта timeworld.ru.
 
-     Args:
-        Нет параметров. Все данные получаются с внешнего ресурса.
-
     Returns:
         list: Список товаров с остатками и ценами
 
-    Example:
+    Examples:
         >>> download_stock()
         [{'Код': '123', 'Количество': '5', 'Цена': '5990 руб.'}, ...]
+
+    Raises:
+        requests.exceptions.HTTPError: Если не удалось скачать файл
     """
     # Скачать остатки с сайта
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
@@ -203,16 +189,16 @@ def download_stock():
 def create_stocks(watch_remnants, offer_ids):
     """Формирует список остатков для загрузки в Ozon.
 
-       Args:
-           watch_remnants: Данные по остаткам с сайта поставщика
-           offer_ids: Артикулы товаров на Ozon
+    Args:
+        watch_remnants: Данные по остаткам с сайта поставщика
+        offer_ids: Артикулы товаров на Ozon
 
-       Returns:
-           Готовый список для обновления остатков
+    Returns:
+        list: Готовый список для обновления остатков
 
-       Example:
-           >>> create_stocks([{"Код": "123", "Количество": "5"}], ["123"])
-           [{"offer_id": "123", "stock": 5}]
+    Examples:
+        >>> create_stocks([{"Код": "123", "Количество": "5"}], ["123"])
+        [{"offer_id": "123", "stock": 5}]
     """
     # Уберем то, что не загружено в seller
     stocks = []
@@ -236,44 +222,25 @@ def create_stocks(watch_remnants, offer_ids):
 def create_prices(watch_remnants, offer_ids):
     """Подготавливает список цен товаров для загрузки в маркетплейс.
 
-       Формирует список цен на основе данных поставщика только для товаров,
-       которые есть и у поставщика, и в вашем магазине на маркетплейсе.
+    Args:
+        watch_remnants: Товары от поставщика
+        offer_ids: Артикулы товаров в вашем магазине на маркетплейсе
 
-       Args:
-           watch_remnants (list): Товары от поставщика в формате:
-               [{
-                   "Код": "12345",           # Артикул товара
-                   "Цена": "5'990.00 руб."    # Цена с сайта поставщика
-               }, ...]
-           offer_ids (list): Артикулы товаров в вашем магазине на маркетплейсе
-               (например ["12345", "67890"])
+    Returns:
+        list: Список цен для загрузки
 
-       Returns:
-           list: Список цен для загрузки в формате:
-               [{
-                   "id": "12345",             # Артикул товара
-                   "price": {
-                       "value": 5990,         # Цена в числовом формате
-                       "currencyId": "RUR"    # Валюта (рубли)
-                   }
-               }, ...]
-
-       Example:
-           >>> create_prices(
-           ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
-           ...     ["12345", "67890"]
-           ... )
-           [{
-               "id": "12345",
-               "price": {
-                   "value": 5990,
-                   "currencyId": "RUR"
-               }
-           }]
-
-       Error Example:
-           >>> create_prices([{"Код": "99999", "Цена": "1'000.00 руб."}], ["12345"])
-           []  # Пустой список, если товары не совпадают
+    Examples:
+        >>> create_prices(
+        ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
+        ...     ["12345", "67890"]
+        ... )
+        [{
+            "auto_action_enabled": "UNKNOWN",
+            "currency_code": "RUB",
+            "offer_id": "12345",
+            "old_price": "0",
+            "price": "5990"
+        }]
     """
     prices = []
     for watch in watch_remnants:
@@ -292,22 +259,17 @@ def create_prices(watch_remnants, offer_ids):
 def price_conversion(price: str) -> str:
     """Преобразует строку с ценой в формат, пригодный для загрузки на маркетплейсы.
 
-    Удаляет все нецифровые символы и обрезает копейки, оставляя только целую часть числа.
-
     Args:
-        price (str): Строка с ценой в формате поставщика, например "5'990.00 руб."
+        price: Строка с ценой в формате поставщика
 
     Returns:
-        str: Цена без лишних символов, например "5990"
+        str: Цена без лишних символов
 
     Examples:
         >>> price_conversion("5'990.00 руб.")
         '5990'
         >>> price_conversion("1 299.99 руб.")
         '1299'
-
-        >>> price_conversion("Нет цены")  # Некорректный ввод
-        ''
     """
     return re.sub("[^0-9]", "", price.split(".")[0])
 
@@ -320,9 +282,9 @@ def divide(lst: list, n: int):
         n: Количество элементов в части
 
     Returns:
-        Генератор с частями списка
+        list: Генератор с частями списка
 
-    Example:
+    Examples:
         >>> list(divide([1,2,3,4], 2))
         [[1,2], [3,4]]
     """
@@ -333,41 +295,28 @@ def divide(lst: list, n: int):
 async def upload_prices(watch_remnants, client_id, seller_token):
     """Асинхронно загружает цены товаров в Ozon.
 
-        Получает актуальные цены от поставщика и обновляет их в личном кабинете Ozon.
-        Автоматически разбивает большой список товаров на части по 1000 позиций.
+    Args:
+        watch_remnants: Список товаров с ценами от поставщика
+        client_id: Ваш ID клиента Ozon
+        seller_token: API-ключ продавца
 
-        Args:
-            watch_remnants (list): Список товаров с ценами от поставщика:
-                [{
-                    "Код": "12345",           # Артикул товара
-                    "Цена": "5'990.00 руб."   # Цена в формате поставщика
-                }, ...]
-            client_id (str): Ваш ID клиента Ozon (например "12345-AB")
-            seller_token (str): API-ключ продавца (например "token123xyz")
+    Returns:
+        list: Список всех загруженных цен
 
-        Returns:
-            list: Список всех загруженных цен в формате:
-                [{
-                    "offer_id": "12345",
-                    "price": "5990",
-                    "currency_code": "RUB"
-                }, ...]
+    Examples:
+        >>> await upload_prices(
+        ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
+        ...     "12345-AB",
+        ...     "token123xyz"
+        ... )
+        [{
+            "offer_id": "12345",
+            "price": "5990",
+            "currency_code": "RUB"
+        }]
 
-        Example:
-            >>> await upload_prices(
-            ...     [{"Код": "12345", "Цена": "5'990.00 руб."}],
-            ...     "12345-AB",
-            ...     "token123xyz"
-            ... )
-            [{
-                "offer_id": "12345",
-                "price": "5990",
-                "currency_code": "RUB"
-            }]
-
-        Error Example:
-            >>> await upload_prices([], "wrong_id", "bad_token")
-            requests.exceptions.HTTPError: 401 Unauthorized
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     offer_ids = get_offer_ids(client_id, seller_token)
     prices = create_prices(watch_remnants, offer_ids)
@@ -379,37 +328,29 @@ async def upload_prices(watch_remnants, client_id, seller_token):
 async def upload_stocks(watch_remnants, client_id, seller_token):
     """Асинхронно обновляет остатки товаров в Ozon.
 
-       Получает текущие остатки со склада поставщика и синхронизирует их с Ozon.
-       Автоматически разбивает большой список на части по 100 товаров для корректной загрузки.
+    Args:
+        watch_remnants: Список товаров от поставщика
+        client_id: ID вашего аккаунта Ozon
+        seller_token: API-токен продавца
 
-       Args:
-           watch_remnants (list): Список товаров от поставщика:
-               [{
-                   "Код": "12345",          # Артикул товара
-                   "Количество": "5"       # Доступное количество (>10, 1 или число)
-               }, ...]
-           client_id (str): ID вашего аккаунта Ozon (например "CLIENT-123")
-           seller_token (str): API-токен продавца (например "SELLER-TOKEN-456")
+    Returns:
+        tuple: Кортеж из двух элементов:
+            - list: Товары с ненулевым остатком
+            - list: Все обновленные товары
 
-       Returns:
-           tuple: Кортеж из двух элементов:
-               - list: Товары с ненулевым остатком
-               - list: Все обновленные товары
+    Examples:
+        >>> await upload_stocks(
+        ...     [{"Код": "12345", "Количество": "5"}],
+        ...     "CLIENT-123",
+        ...     "SELLER-TOKEN-456"
+        ... )
+        (
+            [{"offer_id": "12345", "stock": 5}],
+            [{"offer_id": "12345", "stock": 5}]
+        )
 
-       Example:
-           >>> await upload_stocks(
-           ...     [{"Код": "12345", "Количество": "5"}],
-           ...     "CLIENT-123",
-           ...     "SELLER-TOKEN-456"
-           ... )
-           (
-               [{"offer_id": "12345", "stock": 5}],  # Товары в наличии
-               [{"offer_id": "12345", "stock": 5}]    # Все товары
-           )
-
-       Error Example:
-           >>> await upload_stocks([], "invalid", "token")
-           requests.exceptions.HTTPError: 401 Unauthorized
+    Raises:
+        requests.exceptions.HTTPError: Если запрос к API завершился ошибкой
     """
     offer_ids = get_offer_ids(client_id, seller_token)
     stocks = create_stocks(watch_remnants, offer_ids)
@@ -422,32 +363,20 @@ async def upload_stocks(watch_remnants, client_id, seller_token):
 def main():
     """Основная функция для синхронизации данных с Ozon.
 
-        Выполняет полный цикл обновления данных:
-    1. Загружает актуальные остатки с сайта поставщика
-    2. Получает список товаров магазина на Ozon
-    3. Обновляет остатки и цены на площадке
-    4. Обрабатывает возможные ошибки соединения
-
-    Args:
-        Нет прямых аргументов. Использует переменные окружения:
+    Использует переменные окружения:
         - SELLER_TOKEN: API-токен продавца Ozon
         - CLIENT_ID: ID аккаунта в Ozon
-
-    Returns:
-        None: Функция не возвращает значений, но:
-        - Выводит результаты в консоль
-        - Обновляет данные на Ozon
-
-    Raises:
-        requests.exceptions.ReadTimeout: При превышении времени ожидания
-        requests.exceptions.ConnectionError: При проблемах с соединением
-        Exception: При других неожиданных ошибках
 
     Examples:
         >>> main()
         [INFO] Данные успешно загружены:
         [INFO] - Обновлено 45 товаров
         [INFO] - Из них в наличии: 32
+
+    Raises:
+        requests.exceptions.ReadTimeout: При превышении времени ожидания
+        requests.exceptions.ConnectionError: При проблемах с соединением
+        Exception: При других неожиданных ошибках
     """
     env = Env()
     seller_token = env.str("SELLER_TOKEN")
